@@ -1,0 +1,139 @@
+@startuml osmowsis_class
+/'
+'*' denotes functionality/before or requirements/constraints notes
+
+---- OO Design pseudo classes, attributes, operations, and notes ----
+simulation system / application
+    -- reads in a file that describes the lawn to be cut
+        * ---- file ----
+        * includes the (vertical) length of the lawn
+        * includes the (horizontal) width of the lawn
+        * includes number of lawnmowers being used
+        * includes initial location and direction of each lawnmower (one per line)
+        * includes the number of craters on the lawn
+        * includes the location of each crater (one per line)
+        * ---- given constraints for ease of development ----
+        * the lawnmower will never be started on a crater, nor will it be surrounded by craters and/or fencing
+        * there will not be sections of the lawn that are completely surrounded by craters and/or fencing
+        * all grass squares will have an accessible route
+    * simulation begins once the file has been read and processed
+    -- tracks the progress of the lawnmower as it moves around the lawn
+    -- tracks current direction of the lawnmower
+    -- tracks the current location of the lawnmower
+    -- tracks the location of obstacles
+    -- tracks the amount of grass that has been cut so far
+    -- knows which sections of the lawn still need to be cut
+    -- determine next immediate move of the lawnmower
+    -- determines when the simulation should be stopped
+        * completed lawn
+        * lawnmower encounters a problem
+    -- keep track of 'partial knowledge of lawnmower' with respect to the lawn shape and layout (e.g. location of obstacles)'
+    -- keep track of 'full map of knowledge' needed to accurately track the simulation
+    - robotic lawnmower (similar to automated vaccum cleaner)
+        -- moves around the lawn
+            * occupies exactly one square of the lawn at a time
+            * lawnmower will pointed in one specific direction at any given time
+            * lawnmower can point to any adjacent squares (horizontally, vertically, or diagonally)
+            * lawnmower must first move forward zero-2 squares, then may reorient itself to point to a new direction (or stay in the same direction)
+            * lawnmower cuts grass of any squares it occupies and passes across successfully (including initial/starting square)
+            * By the same token, if the lawnmower passes over a square that contains an obstacle, it will become immobilized and the simulation must be halted
+            * If the lawnmower attempts to move off the lawn, it will become immobilized and the simulation must be halted
+            * ---- three possible actions on turn ---- *
+            * 1. move (go forward (0,1, or 2 spaces) and then change direction)
+            * 2. scan its surroundings
+                * gets to the heart of the 'automated' nature of the problem: the lawnmower is permitted to scan and receive information about the eight squares surrounding it (returns state of surroundings squares as 'grass', 'crater', or 'fence')
+                * the first value in the sequence of the resulting scan should be the contents of the square North of the lawnmower, with the remaining values being listed in clockwise order (this scan result will thus be a list of 8 values)
+                * permitted to keep track of all the knowledge that it collects during the state of the simulation run
+            * 3. turn itself off 
+                * when the lawnmower believes it has cut all the grass squares on the lawn, then it should turn itself off
+        -- learns the layout of your lawn
+        -- cuts grass
+        -- avoids obstacles
+    * each turn of the simulation run must request the lawnmower select its next action
+    - lawn
+        - rectangular shape
+        - divided into a grid of squares
+        - each square by default contains grass that needs to be cut, unless it contains an obstacle or some artifact
+            * the only obstacles considered at this point are craters
+            * craters are static and do not move during the simulation
+            * lawnmower must avoid squares with craters, or become immobilized causing the simulation to stop
+    * goal is for the lawnmower to cut all the grass on the lawn completely and in as few turns as possible
+    * once the simulation has been halted, the system must report the actual number of grass squares that were cut, the total number of grass squares that originally existed (including the one in which the lawnmower started), and the number of turns that the lawnmower took to complete the simulation
+    * lawn is traditional x,y coordinate system with the origin at the bottom left corner
+    * ensure there is a distinction between the knowledge of the mower vs the knowledge of the simulation system
+'/
+
+class SimulationSystem {
+    - lawn: Lawn
+    - lawnmowers: List<Lawnmower>
+    - obstacles: List<Obstacle>
+    - currentTurn: int
+    + readInputFile(filename: String): void
+    + simulate(): void
+    + evaluateSimulationEnd(): boolean
+    + reportResults(): void
+    + trackLawnmowerProgress(): void
+}
+
+class Lawn {
+    - width: int
+    - height: int
+    - grassSquares: int
+    - grid: Square[][]
+    + Lawn(width: int, height: int)
+    + placeObstacle(x: int, y: int, obstacle: Obstacle): void
+    + markGrassCut(x: int, y: int): void
+    + isObstacle(x: int, y: int): boolean
+    + getTotalGrassSquares(): int
+    + getSquareStatus(x: int, y: int): Square
+}
+
+class Square {
+    - containsGrass: boolean
+    - obstacle: Obstacle
+}
+
+abstract class Obstacle {
+}
+
+class Crater extends Obstacle {
+}
+
+class Lawnmower {
+    - location: Point
+    - direction: Direction
+    - knowledgeMap: Square[][]
+    + move(steps: int, direction: Direction): void
+    + scanSurroundings(): ScanResult[]
+    + decideNextAction(): void
+    + turnOff(): void
+    + cutGrass(): void
+    + isImmobilized(): boolean
+}
+
+enum Direction {
+    NORTH
+    NORTHEAST
+    EAST
+    SOUTHEAST
+    SOUTH
+    SOUTHWEST
+    WEST
+    NORTHWEST
+}
+
+enum ScanResult {
+    GRASS
+    OBSTACLE
+    EMPTY
+    FENCE
+}
+
+SimulationSystem --> "1" Lawn : contains
+SimulationSystem --> "*" Lawnmower : manages
+Lawnmower ..> Lawn : interacts
+Lawn --> "*" Square : consists of
+Square "1" --> "0..1" Obstacle : contains
+Lawnmower --> "1" ScanResult : uses
+
+@enduml
