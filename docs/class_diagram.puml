@@ -1,4 +1,5 @@
 @startuml osmowsis_class
+
 /'
 '*' denotes functionality/before or requirements/constraints notes
 
@@ -63,16 +64,21 @@ simulation system / application
     * ensure there is a distinction between the knowledge of the mower vs the knowledge of the simulation system
 '/
 
-class SimulationSystem {
+skinparam linetype ortho
+
+class SimulationManager {
+    - simulationController: SimulationController
+    + SimulationManager(filename: String)
+    + playSimulation(): void
+}
+
+class SimulationController {
     - lawn: Lawn
     - lawnmowers: List<Lawnmower>
-    - obstacles: List<Obstacle>
-    - currentTurn: int
-    + readInputFile(filename: String): void
-    + simulate(): void
-    + evaluateSimulationEnd(): boolean
-    + reportResults(): void
-    + trackLawnmowerProgress(): void
+    + SimulationController(lawn: Lawn, lawnmowers: List<Lawnmower>)
+    + advanceLawnmowers(): void
+    + processMowerAction(mower: Lawnmower, action: MowerAction): void
+    + updateMowerKnowledge(mower: Lawnmower, scanResults: List<ScanResult>): void
 }
 
 class Lawn {
@@ -83,7 +89,7 @@ class Lawn {
     + Lawn(width: int, height: int)
     + placeObstacle(x: int, y: int, obstacle: Obstacle): void
     + markGrassCut(x: int, y: int): void
-    + isObstacle(x: int, y: int): boolean
+    + isOdbddstacle(x: int, y: int): boolean
     + getTotalGrassSquares(): int
     + getSquareStatus(x: int, y: int): Square
 }
@@ -103,23 +109,32 @@ class Lawnmower {
     - location: Point
     - direction: Direction
     - knowledgeMap: Square[][]
-    + move(steps: int, direction: Direction): void
-    + scanSurroundings(): ScanResult[]
-    + decideNextAction(): void
-    + turnOff(): void
-    + cutGrass(): void
-    + isImmobilized(): boolean
+    + getNextAction(): MowerAction
+    + receiveScanResults(scanResults: List<ScanResult>): void
+}
+
+class MowerAction {
+    - actionType: ActionType
+    - direction: Direction
+    - distance: int
+    + MowerAction(actionType: ActionType, direction: Direction, distance: int)
 }
 
 enum Direction {
     NORTH
-    NORTHEAST
     EAST
-    SOUTHEAST
     SOUTH
-    SOUTHWEST
     WEST
+    NORTHEAST
+    SOUTHEAST
+    SOUTHWEST
     NORTHWEST
+}
+
+enum ActionType {
+    MOVE
+    SCAN
+    SHUTOFF
 }
 
 enum ScanResult {
@@ -129,11 +144,18 @@ enum ScanResult {
     FENCE
 }
 
-SimulationSystem --> "1" Lawn : contains
-SimulationSystem --> "*" Lawnmower : manages
-Lawnmower ..> Lawn : interacts
-Lawn --> "*" Square : consists of
-Square "1" --> "0..1" Obstacle : contains
-Lawnmower --> "1" ScanResult : uses
+SimulationManager "1" *-right- "1" SimulationController
+SimulationManager .down.> Lawn : creates
+SimulationManager .down.> Lawnmower : creates
+SimulationController "1" o-down- "1" Lawn : manages
+SimulationController "1" o-down- "1..*" Lawnmower : manages
+SimulationController .down.> MowerAction : processes
+SimulationController .right.> ScanResult
+Lawnmower -- Lawn : interacts
+Lawnmower ..> MowerAction : generates
+Lawn "1" *-- "*" Square : consists of
+Square "1" *-- "0..1" Obstacle : contains
+MowerAction "1" o-- "1" Direction
+MowerAction ..> ActionType
 
 @enduml

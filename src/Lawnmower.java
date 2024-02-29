@@ -16,6 +16,7 @@ public class Lawnmower {
 
         // Cut the grass at the starting location
         cutGrassAt(location);
+        
     }
 
     private void cutGrassAt(Point location) {
