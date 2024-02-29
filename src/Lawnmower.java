@@ -1,156 +1,119 @@
-import java.awt.Point;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.HashMap;
+import java.awt.Point;
 
 public class Lawnmower {
-    private Point location; // Current location
+    private Point location;
     private Direction direction;
-    private Map<Point, ScanResult> knowledgeMap; // Dynamic map to store known squares
+    private Map<Point, ScanResult> knowledgeMap;
 
-    public Lawnmower(Point startingLocation, Direction startingDirection) {
-        this.location = (Point) startingLocation.clone();
-        this.direction = startingDirection;
+    public Lawnmower(Point location, Direction direction) {
+        this.location = location;
+        this.direction = direction;
         this.knowledgeMap = new HashMap<>();
-
-        // Cut the grass at the starting location
-        cutGrassAt(location);
-        
     }
 
-    private void cutGrassAt(Point location) {
-        knowledgeMap.put(new Point(location), ScanResult.EMPTY); // Assuming grass is cut and now the square is empty
-    }
+    public MowerAction getNextAction() {
+        // Check immediate surroundings for grass
+        for (int steps = 1; steps <= 2; steps++) {
+            Point nextLocation = getAdjustedLocation(this.location, this.direction, steps);
+            ScanResult result = knowledgeMap.getOrDefault(nextLocation, ScanResult.UNKNOWN);
 
-    // method to select the lawnmmowers next action; the sophisticated algorithm of it all
-    
-
-    public MoveResult move(int steps, Direction newDirection, Lawn lawn) {
-        Point currentStepLocation = new Point(location);
-        boolean immobilized = false;
-        List<Point> grassCutPositions = new ArrayList<>();
-
-        for (int i = 1; i <= steps; i++) {
-            Point nextStep = calculateNextStep(currentStepLocation, this.direction); // Use current direction for
-                                                                                     // movement
-
-            if (!lawn.isWithinBounds(nextStep.x, nextStep.y)) {
-                System.out.println("Move stopped: Out of bounds.");
-                immobilized = true;
-                break;
-            }
-
-            currentStepLocation.setLocation(nextStep.x, nextStep.y); // move to the next step even if there's an obstacle
-            if (lawn.isObstacle(nextStep.x, nextStep.y)) {
-                System.out.println("Move stopped: Obstacle encountered.");
-                immobilized = true;
-                break;
-            }
-
-            if (lawn.getSquareStatus(nextStep.x, nextStep.y).containsGrass()) {
-                cutGrassAt(nextStep);
-                grassCutPositions.add(new Point(nextStep));
+            if (result == ScanResult.GRASS) {
+                // Move towards grass if found within 1 or 2 steps in the current direction
+                return new MowerAction(ActionType.MOVE, this.direction, steps);
+            } else if (result == ScanResult.FENCE || result == ScanResult.OBSTACLE) {
+                // If an obstacle or fence is immediately in the direction, don't move, just change direction
+                Direction newDirection = findBestDirectionForExploration();
+                if (newDirection != null) {
+                    return new MowerAction(ActionType.MOVE, newDirection, 0);
+                }
             }
         }
 
-        // Update the lawnmower's location to the final step position
-        location.setLocation(currentStepLocation);
-        // Update the lawnmower's direction to the new direction after completing the
-        // move
-        this.direction = newDirection;
-
-        return new MoveResult(location, this.direction, grassCutPositions, immobilized);
-    }
-
-    private Point calculateNextStep(Point currentLocation, Direction direction) {
-        Point nextStep = new Point(currentLocation);
-        switch (direction) {
-            case NORTH:
-                nextStep.y -= 1;
-                break;
-            case NORTHEAST:
-                nextStep.x += 1;
-                nextStep.y -= 1;
-                break;
-            case EAST:
-                nextStep.x += 1;
-                break;
-            case SOUTHEAST:
-                nextStep.x += 1;
-                nextStep.y += 1;
-                break;
-            case SOUTH:
-                nextStep.y += 1;
-                break;
-            case SOUTHWEST:
-                nextStep.x -= 1;
-                nextStep.y += 1;
-                break;
-            case WEST:
-                nextStep.x -= 1;
-                break;
-            case NORTHWEST:
-                nextStep.x -= 1;
-                nextStep.y -= 1;
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid direction: " + direction);
+        // If no grass is found in the current direction within 2 steps, decide on the next best action
+        Direction newDirection = findBestDirectionForExploration();
+        if (newDirection != null && newDirection != this.direction) {
+            // Change direction if a better direction is found
+            return new MowerAction(ActionType.MOVE, newDirection, 0);
         }
-        return nextStep;
+
+        // Default action if no better option is found
+        return new MowerAction(ActionType.SCAN, this.direction, 0);
     }
 
-    public void scan(Lawn lawn) {
-        // Scan in all eight directions from the lawnmower's current location
+    private Direction findBestDirectionForExploration() {
+        // This method should analyze the knowledgeMap to determine the best direction to explore next
+        // For simplicity, return a different direction as an example. Implement logic based on your requirements
         for (Direction dir : Direction.values()) {
-            Point scanLocation = getAdjacentLocation(location, dir);
-            // Determine the result of scanning in this direction
-            ScanResult result = determineScanResult(lawn, scanLocation);
-            // Update the knowledge map with the result
-            knowledgeMap.put(scanLocation, result);
+            if (dir != this.direction) {
+                return dir; // Simplified decision-making
+            }
         }
+        return null;
     }
 
-    private ScanResult determineScanResult(Lawn lawn, Point location) {
-        // Check if the location is out of bounds (considered as FENCE)
-        if (!lawn.isWithinBounds(location.x, location.y)) {
-            return ScanResult.FENCE;
-        }
-        // Check for obstacles at the location
-        else if (lawn.isObstacle(location.x, location.y)) {
-            return ScanResult.OBSTACLE;
-        }
-        // Check if there's grass at the location
-        else if (lawn.getSquareStatus(location.x, location.y).containsGrass()) {
-            return ScanResult.GRASS;
-        }
-        // If none of the above, the square is empty
-        else {
-            return ScanResult.EMPTY;
-        }
-    }
-
-    private Point getAdjacentLocation(Point currentLocation, Direction direction) {
-        // Calculate the adjacent location based on direction
+    private Point getAdjustedLocation(Point currentLocation, Direction direction, int steps) {
+        Point adjustedLocation = new Point(currentLocation.x, currentLocation.y);
         switch (direction) {
-            case NORTH:
-                return new Point(currentLocation.x, currentLocation.y - 1);
-            case NORTHEAST:
-                return new Point(currentLocation.x + 1, currentLocation.y - 1);
-            case EAST:
-                return new Point(currentLocation.x + 1, currentLocation.y);
-            case SOUTHEAST:
-                return new Point(currentLocation.x + 1, currentLocation.y + 1);
-            case SOUTH:
-                return new Point(currentLocation.x, currentLocation.y + 1);
-            case SOUTHWEST:
-                return new Point(currentLocation.x - 1, currentLocation.y + 1);
-            case WEST:
-                return new Point(currentLocation.x - 1, currentLocation.y);
-            case NORTHWEST:
-                return new Point(currentLocation.x - 1, currentLocation.y - 1);
-            default:
-                throw new IllegalArgumentException("Unknown direction: " + direction);
+            case NORTH: adjustedLocation.y += steps; break;
+            case NORTHEAST: adjustedLocation.x += steps; adjustedLocation.y += steps; break;
+            case EAST: adjustedLocation.x += steps; break;
+            case SOUTHEAST: adjustedLocation.x += steps; adjustedLocation.y -= steps; break;
+            case SOUTH: adjustedLocation.y -= steps; break;
+            case SOUTHWEST: adjustedLocation.x -= steps; adjustedLocation.y -= steps; break;
+            case WEST: adjustedLocation.x -= steps; break;
+            case NORTHWEST: adjustedLocation.x -= steps; adjustedLocation.y += steps; break;
         }
+        return adjustedLocation;
+    }
+
+    public void receiveScanResults(List<ScanResult> scanResults) {
+        // Assuming the scan results are received in a clockwise manner starting from NORTH
+        Direction[] directions = Direction.values();
+        for (int i = 0; i < scanResults.size(); i++) {
+            Point scanLocation = getAdjustedLocation(this.location, directions[i], 1);
+            this.knowledgeMap.put(scanLocation, scanResults.get(i));
+        }
+    }
+
+    public void receiveMoveResult(MoveResult moveResult) {
+        this.location = moveResult.getNewLocation();
+        this.direction = moveResult.getNewDirection();
+        // Assuming MoveResult includes a list of points where grass was cut
+        for (Point grassCutLocation : moveResult.getGrassCutPositions()) {
+            // Update knowledge map to reflect the grass has been cut
+            this.knowledgeMap.put(grassCutLocation, ScanResult.EMPTY);
+        }
+        if (moveResult.isImmobilized()) {
+            // Handle immobilization (not specified in detail, could involve setting a status or notifying the controller)
+        }
+    }
+
+    // Getters and Setters
+
+    public Point getLocation() {
+        return location;
+    }
+
+    public void setLocation(Point location) {
+        this.location = location;
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public void setDirection(Direction direction) {
+        this.direction = direction;
+    }
+
+    public Map<Point, ScanResult> getKnowledgeMap() {
+        return knowledgeMap;
+    }
+
+    public void setKnowledgeMap(Map<Point, ScanResult> knowledgeMap) {
+        this.knowledgeMap = knowledgeMap;
     }
 }

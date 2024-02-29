@@ -2,11 +2,12 @@ public class Square {
     private boolean containsGrass;
     private Obstacle obstacle;
 
-    public Square() {
-        this.containsGrass = true; // Assuming all squares start with grass by default
-        this.obstacle = null; // No obstacle by default
+    public Square(boolean containsGrass, Obstacle obstacle) {
+        this.containsGrass = containsGrass;
+        this.obstacle = obstacle;
     }
 
+    // Getters and setters
     public boolean containsGrass() {
         return containsGrass;
     }
