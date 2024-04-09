@@ -7,13 +7,14 @@ import exceptions.MowerCrashException;
 public class SimulationController {
     private Lawn lawn;
     private List<Lawnmower> lawnmowers;
+    private int mowerAdvanceCount = 0;
 
     public SimulationController(Lawn lawn, List<Lawnmower> lawnmowers) {
         this.lawn = lawn;
         this.lawnmowers = lawnmowers;
     }
 
-    public void advanceLawnmowers() throws MowerCrashException{
+    public void advanceLawnmowers() throws MowerCrashException {
         for (Lawnmower mower : lawnmowers) {
             MowerAction action = mower.getNextAction();
             switch (action.getActionType()) {
@@ -32,6 +33,8 @@ public class SimulationController {
                     break;
             }
         }
+
+        mowerAdvanceCount++;
     }
 
     private MoveResult move(Lawnmower mower, int steps, Direction newDirection, Lawn lawn) {
@@ -146,5 +149,18 @@ public class SimulationController {
             default:
                 throw new IllegalArgumentException("Unknown direction: " + direction);
         }
+    }
+
+    // Public methods to retrieve logging information
+    public int getTotalGrassOriginally() {
+        return lawn.getInitialGrassSquares();
+    }
+
+    public int getGrassCutSoFar() {
+        return lawn.getCutGrassSquares();
+    }
+
+    public int getMowerAdvances() {
+        return mowerAdvanceCount;
     }
 }

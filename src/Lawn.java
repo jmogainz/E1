@@ -42,10 +42,6 @@ public class Lawn {
         }
     }
 
-    public int getTotalGrassSquares() {
-        return currentGrassSquares;
-    }
-
     public Square getSquareStatus(int x, int y) {
         if (x >= 0 && x < width && y >= 0 && y < height) {
             return grid[y][x];
@@ -59,5 +55,25 @@ public class Lawn {
 
     public boolean isObstacle(int x, int y) {
         return isWithinBounds(x, y) && grid[y][x].getObstacle() != null;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public int getInitialGrassSquares() {
+        return initialGrassSquares;
+    }
+
+    public int getCurrentGrassSquares() {
+        return currentGrassSquares;
+    }
+
+    public int getCutGrassSquares() {
+        return initialGrassSquares - currentGrassSquares;
     }
 }

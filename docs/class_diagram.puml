@@ -86,16 +86,23 @@ class SimulationController {
 }
 
 class Lawn {
-    - width: int
-    - height: int
-    - grassSquares: int
-    - grid: Square[][]
-    + Lawn(width: int, height: int)
-    + placeObstacle(x: int, y: int, obstacle: Obstacle): void
-    + markGrassCut(x: int, y: int): void
-    + isObstacle(x: int, y: int): boolean
-    + getTotalGrassSquares(): int
-    + getSquareStatus(x: int, y: int): Square
+    - width : int
+    - height : int
+    - initialGrassSquares : int
+    - currentGrassSquares : int
+    - grid : Square[][]
+
+    + Lawn(width : int, height : int, obstacles : List<ObstaclePlacement>)
+    + placeObstacle(x : int, y : int, obstacle : Obstacle) : void
+    + markGrassCut(x : int, y : int) : void
+    + getSquareStatus(x : int, y : int) : Square
+    + isWithinBounds(x : int, y : int) : boolean
+    + isObstacle(x : int, y : int) : boolean
+    + getWidth() : int
+    + getHeight() : int
+    + getInitialGrassSquares() : int
+    + getCurrentGrassSquares() : int
+    + getCutGrassSquares() : int
 }
 
 class ObstaclePlacement {
@@ -181,11 +188,11 @@ SimulationManager .down.> Lawnmower : creates
 SimulationController "1" o-down- "1" Lawn : manages
 SimulationController "1" o-down- "1..*" Lawnmower : manages
 SimulationController .down.> MowerAction : processes
-Lawnmower -- Lawn
+Lawnmower -[hidden]- Lawn
 Lawnmower ..> MowerAction : generates
 Lawn "1" *-- "*" Square : consists of
 Square "1" *-- "0..1" Obstacle : contains
 MowerAction "1" o-- "1" Direction
-MowerAction ..> ActionType
+MowerAction "1" o-- "1" ActionType
 
 @enduml
